@@ -17,14 +17,12 @@
 ```
 
 ```
-
-
 pip install -r requirements.txt
 ```
 
 - Run the code with mentioned command below.
 ```
-#for ANPR
+For ANPR
 python main.py --weights our.pt --source test.mp4 --view-img --save-crop
 
 ```
