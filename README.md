@@ -12,9 +12,9 @@
 - Create a Anaconda Envirnoment 
 ```
 conda create -n anpr python=3.10
-conda activate apnr
+conda activate anpr
 
-pip install PyYAML scipy pandas matplotlib tqdm seborn
+pip install PyYAML scipy pandas matplotlib tqdm seaborn
 pip install filterpy
 ```
 If you have GPU use this:
@@ -32,7 +32,7 @@ pip3 install torch torchvision torchaudio
 
 ```
 pip install easyocr
-pip install opencv-python==4.6.0.66
+pip install opencv-python
 ```
 
 For Inference use this
