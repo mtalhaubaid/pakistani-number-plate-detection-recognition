@@ -17,17 +17,13 @@ from utils.general import (LOGGER, Profile, check_file, check_img_size,
                             scale_coords, strip_optimizer, xyxy2xywh)
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, time_sync
-
+from sort import *
 import easyocr
 import psycopg2
 import time
 from datetime import datetime as ddt
 from datetime import  timezone as tz
-#Establishing the connection
-conn = psycopg2.connect(
-   database="Surveillance", user='postgres', password='admin12345', host='127.0.0.1', port= '5432'
-)
-cursor = conn.cursor()
+
 ##### DEFINING GLOBAL VARIABLE
 
 EASY_OCR = easyocr.Reader(['en']) ### initiating easyocr
@@ -40,14 +36,6 @@ if str(ROOT) not in sys.path:
 ROOT = Path(os.path.relpath(ROOT, Path.cwd())) 
 
 #---------------Object Tracking---------------
-import skimage
-from sort import *
-
-
-#-----------Object Blurring-------------------
-blurratio = 40
-
-
 #.................. Tracker Functions .................
 '''Computer Color for every box and track'''
 palette = (2 ** 11 - 1, 2 ** 15 - 1, 2 ** 20 - 1)
@@ -116,31 +104,15 @@ def draw_boxes(img, bbox,plate_num, identities=None, categories=None, names=None
         data = (int((box[0]+box[2])/2),(int((box[1]+box[3])/2)))
         label = str(id)
 
-        #
-        # if label not in check_num:
-        #     plate_num = recognize_plate_easyocr(img=img, coords=coords, reader=EASY_OCR, region_threshold=OCR_TH)
-        #     check_num.append(id)
-        #     if plate_num:
-        #         print(plate_num,"____id____",label)
 
-
-        if color_box:
-            color = compute_color_for_labels(id)
-            (w, h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 1)
-            cv2.rectangle(img, (x1, y1), (x2, y2),color, 2)
-            cv2.rectangle(img, (x1, y1 - 20), (x1 + w, y1), (255,191,0), -1)
-            cv2.putText(img, label, (x1, y1 - 5),cv2.FONT_HERSHEY_SIMPLEX, 0.6, 
-            [255, 255, 255], 1)
-            # cv2.circle(img, data, 3, color,-1)
-        else:
-            (w, h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 1)
-            cv2.rectangle(img, (x1, y1), (x2, y2),(255,191,0), 2)
-            cv2.rectangle(img, (x1, y1 - 20), (x1 + w, y1), (255,191,0), -1)
-            cv2.putText(img, label, (x1, y1 - 5),cv2.FONT_HERSHEY_SIMPLEX, 0.6, 
-            [255, 255, 255], 1)
-            cv2.putText(img, plate_num, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
-                        [0, 0, 255], 2)
-            # cv2.circle(img, data, 3, (255,191,0),-1)
+        (w, h), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 1)
+        cv2.rectangle(img, (x1, y1), (x2, y2),(255,191,0), 2)
+        cv2.rectangle(img, (x1, y1 - 20), (x1 + w, y1), (255,191,0), -1)
+        cv2.putText(img, label, (x1, y1 - 5),cv2.FONT_HERSHEY_SIMPLEX, 0.6,
+        [255, 255, 255], 1)
+        # cv2.putText(img, plate_num, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
+        #             [0, 0, 255], 2)
+        # cv2.circle(img, data, 3, (255,191,0),-1)
     return img
 #..............................................................................
 
@@ -248,14 +220,7 @@ def detect_number(weights=ROOT / 'yolov5n.pt',
                     n = (det[:, -1] == c).sum()
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "
 
-                # Write results
-                for *xyxy, conf, cls in reversed(det):
-                    if blur_obj:
-                        crop_obj = im0[int(xyxy[1]):int(xyxy[3]),int(xyxy[0]):int(xyxy[2])]
-                        blur = cv2.blur(crop_obj,(blurratio,blurratio))
-                        im0[int(xyxy[1]):int(xyxy[3]),int(xyxy[0]):int(xyxy[2])] = blur
-                    else:
-                        continue
+
                 #..................USE TRACK FUNCTION....................
                 #pass an empty array to sort
                 dets_to_sort = np.empty((0,6))
@@ -292,7 +257,7 @@ def detect_number(weights=ROOT / 'yolov5n.pt',
                                 dte = ddt.now(tz.utc)
                                 # plate_num = 'ABC 12 777'
                                 # inserting values
-                                cursor.execute('insert into TEST values (DEFAULT,  %s, %s)', (plate_num, dte))
+                                # cursor.execute('insert into TEST values (DEFAULT,  %s, %s)', (plate_num, dte))
 
                     draw_boxes(im0, bbox_xyxy,str(plate_num), identities, categories, names,color_box)
 
@@ -320,62 +285,52 @@ def detect_number(weights=ROOT / 'yolov5n.pt',
                     vid_writer.write(im0)
         # print("Frame Processing!")
     print("Video Exported Success")
-    conn.commit()
-    print("Records inserted........")
 
-    # Closing the connection
-    conn.close()
-    if update:
-        strip_optimizer(weights)
     
     if vid_cap:
         vid_cap.release()
 
     return im0,plate_num
-# def parse_opt():
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'yolov5s.pt', help='model path(s)')
-#     parser.add_argument('--source', type=str, default=ROOT / 'data/images', help='file/dir/URL/glob, 0 for webcam')
-#     parser.add_argument('--data', type=str, default=ROOT / 'data/coco128.yaml', help='(optional) dataset.yaml path')
-#     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')
-#     parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')
-#     parser.add_argument('--iou-thres', type=float, default=0.45, help='NMS IoU threshold')
-#     parser.add_argument('--max-det', type=int, default=1000, help='maximum detections per image')
-#     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-#     parser.add_argument('--view-img', action='store_true', help='show results')
-#     parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
-#     parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')
-#     parser.add_argument('--save-crop', action='store_true', help='save cropped prediction boxes')
-#     parser.add_argument('--nosave', action='store_true', help='do not save images/videos')
-#     parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --classes 0, or --classes 0 2 3')
-#     parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
-#     parser.add_argument('--augment', action='store_true', help='augmented inference')
-#     parser.add_argument('--visualize', action='store_true', help='visualize features')
-#     parser.add_argument('--update', action='store_true', help='update all models')
-#     parser.add_argument('--project', default=ROOT / 'runs/detect', help='save results to project/name')
-#     parser.add_argument('--name', default='exp', help='save results to project/name')
-#     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
-#     parser.add_argument('--line-thickness', default=3, type=int, help='bounding box thickness (pixels)')
-#     parser.add_argument('--hide-labels', default=False, action='store_true', help='hide labels')
-#     parser.add_argument('--hide-conf', default=False, action='store_true', help='hide confidences')
-#     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
-#     parser.add_argument('--dnn', action='store_true', help='use OpenCV DNN for ONNX inference')
-#     parser.add_argument('--blur-obj', action='store_true', help='Blur Detected Objects')
-#     parser.add_argument('--color-box', action='store_true', help='Change color of every box and track')
-#     opt = parser.parse_args()
-#     opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
-#     print_args(vars(opt))
-#     return opt
+def parse_opt():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'yolov5s.pt', help='model path(s)')
+    parser.add_argument('--source', type=str, default=ROOT / 'data/images', help='file/dir/URL/glob, 0 for webcam')
+    parser.add_argument('--data', type=str, default=ROOT / 'data/coco128.yaml', help='(optional) dataset.yaml path')
+    parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')
+    parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')
+    parser.add_argument('--iou-thres', type=float, default=0.45, help='NMS IoU threshold')
+    parser.add_argument('--max-det', type=int, default=1000, help='maximum detections per image')
+    parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    parser.add_argument('--view-img', action='store_true', help='show results')
+    parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
+    parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')
+    parser.add_argument('--save-crop', action='store_true', help='save cropped prediction boxes')
+    parser.add_argument('--nosave', action='store_true', help='do not save images/videos')
+    parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --classes 0, or --classes 0 2 3')
+    parser.add_argument('--visualize', action='store_true', help='visualize features')
+    parser.add_argument('--update', action='store_true', help='update all models')
+    parser.add_argument('--project', default=ROOT / 'runs/detect', help='save results to project/name')
+    parser.add_argument('--name', default='exp', help='save results to project/name')
+    parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
+    parser.add_argument('--line-thickness', default=3, type=int, help='bounding box thickness (pixels)')
+    parser.add_argument('--hide-labels', default=False, action='store_true', help='hide labels')
+    parser.add_argument('--hide-conf', default=False, action='store_true', help='hide confidences')
+    parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
+    parser.add_argument('--color-box', action='store_true', help='Change color of every box and track')
+    opt = parser.parse_args()
+    opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
+    print_args(vars(opt))
+    return opt
 
 
-# def main(opt):
-#     check_requirements(exclude=('tensorboard', 'thop'))
-#     detect(**vars(opt))
+def main(opt):
+    check_requirements(exclude=('tensorboard', 'thop'))
+    detect_number(**vars(opt))
 
 
-# if __name__ == "__main__":
-    # opt = parse_opt()
-    # main()
+if __name__ == "__main__":
+    opt = parse_opt()
+    main(opt)
 
 
 # "rtsp://admin:admin12345@192.168.1.16:554/cam/realmonitor?channel=1&subtype=0"

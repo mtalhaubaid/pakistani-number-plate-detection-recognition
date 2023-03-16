@@ -1,28 +1,45 @@
-# yolov5-object-tracking
+# Pakistani NumberPlate Detection, Tracking and Recognition
 
-### New Features
+###  Features
 - YOLOv5 Object Tracking Using Sort Tracker
+- detection in specific box
+- ANPR with OCR
 - Code can run on Both (CPU & GPU)
 - Video/WebCam/External Camera/IP Stream Supported
 
 
-### Pre-Requsities
-- Python 3.9 (Python 3.7/3.8 can work in some cases)
+### Environment
+- Create a Anaconda Envirnoment 
+```
+conda create -n anpr python=3.10
+conda activate apnr
 
+pip install PyYAML scipy pandas matplotlib tqdm seborn
+pip install filterpy
+```
+If you have GPU use this:
+    
+```
 
+"To install pytorch with cuda make sure you had already installed and set the path cuda & cudnn in base of your system."
 
-- Create a virtual envirnoment (Recommended, If you dont want to disturb python packages)
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu117
+```
+If you have CPU use this: 
+```
+pip3 install torch torchvision torchaudio
 ```
 
 ```
-pip install -r requirements.txt
+pip install easyocr
+pip install opencv-python==4.6.0.66
 ```
 
-- Run the code with mentioned command below.
-```
-For ANPR
-python main.py --weights our.pt --source test.mp4 --view-img --save-crop
+For Inference use this
+
 
 ```
-
+python main_rect_det.py --weights our.pt --source test.mp4 --view-img 
+```
+For tracking code will be uploaded soon
 

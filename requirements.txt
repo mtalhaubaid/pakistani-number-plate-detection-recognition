@@ -1,12 +1,15 @@
-# Base ----------------------------------------
-matplotlib>=3.2.2
-numpy>=1.18.5
-opencv-python>=4.1.1
-Pillow>=7.1.2
-PyYAML>=5.3.1
-requests>=2.23.0
-scipy>=1.4.1
-torch>=1.7.0,!=1.12.0
-torchvision>=0.8.1,!=0.13.0
-tqdm>=4.64.0
-# protobuf<=3.20.1  # https://github.com/ultralytics/yolov5/issues/8012
+For anaconda env
+
+conda create -n anpr
+conda activate apnr
+pip install PyYAML scipy pandas matplotlib tqdm seborn
+pip install filterpy
+
+To install pytorch with cuda make sure you have install and set the path cuda & cudnn in base of your system.
+    pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu117
+
+pip install easyocr
+pip install opencv-python==4.6.0.66
+
+
+
