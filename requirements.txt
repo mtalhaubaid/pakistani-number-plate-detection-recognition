@@ -11,6 +11,20 @@ To install pytorch with cuda make sure you have install and set the path cuda & 
 pip install easyocr
 pip install opencv-python==4.6.0.66
 
+For CPU
+_______________
+
+conda create -n anpr
+conda activate apnr
+pip install PyYAML scipy pandas matplotlib tqdm seborn
+pip install filterpy
+
+To install pytorch on CPU.
+    conda install pytorch torchvision torchaudio cpuonly -c pytorch
+
+pip install easyocr
+pip install opencv-python==4.6.0.66
+
 
 
 
